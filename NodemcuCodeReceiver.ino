@@ -1,14 +1,8 @@
-UPLOAD THIS CODE AFER UPLOADING ARDUINO CODE THEN CONNECT TX AND RX
-THIS CODE UPLOADS THE DATA TO FIREBASE ITS GETTING FROM ARDUINO UNO'S SENSORS
+// UPLOAD THIS CODE AFER UPLOADING ARDUINO CODE THEN CONNECT TX AND RX
+// THIS CODE UPLOADS THE DATA TO FIREBASE ITS GETTING FROM ARDUINO UNO'S SENSORS
 #include <ESP8266WiFi.h>
-#include <Firebase_ESP_Client.h> 
-
-// WiFi credentials
-#define WIFI_SSID "SmartBro_5EE7"
-#define WIFI_PASSWORD "soriano/wifiPSS"
-
-// #define WIFI_SSID "HUAWEI-2.4G-GLhK"
-// #define WIFI_PASSWORD "PhinmaEd15"
+#include <Firebase_ESP_Client.h>
+#include <WiFiManager.h>
 
 // Firebase credentials 
 #define FIREBASE_HOST "psmwaterquality-default-rtdb.asia-southeast1.firebasedatabase.app"
@@ -22,22 +16,28 @@ FirebaseConfig config;
 void setup() {
   Serial.begin(9600);
 
-  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
+  // Initialize Wi-FiManager
+  WiFiManager wifiManager;
+  WiFi.disconnect(true);
+  
+
+  // Connect to Wi-Fi or configure credentials
+  if (!wifiManager.autoConnect("Wi-Fi Manager", "wifi_manager")) {
+    Serial.println("Failed to connect or configure. Restarting...");
+    ESP.restart();
   }
 
-    // Print connection status
-  if(WiFi.status() == WL_CONNECTED){
-    Serial.println("Connected");
-  }
-  else{
+  // Print connection status
+  if (WiFi.status() == WL_CONNECTED) {
+    Serial.println("Connected: " + WiFi.SSID());
+    
+  } else {
     Serial.println("Not Connected");
   }
 
-
+  // Configure Firebase
   config.host = FIREBASE_HOST;
-  config.signer.tokens.legacy_token = FIREBASE_AUTH; 
+  config.signer.tokens.legacy_token = FIREBASE_AUTH;
   Firebase.begin(&config, &auth);
 }
 
@@ -50,7 +50,7 @@ void loop() {
       if (Firebase.RTDB.setFloat(&fbdo, "/sensors/pH", pHValue)) {
         Serial.println("pH Data sent");
       } else {
-        Serial.println("Error sending pH data: " + fbdo.errorReason());    
+        Serial.println("Error sending pH data: " + fbdo.errorReason());
       }
     } else if (data.startsWith("Turbidity: ")) {
       int turbidity = data.substring(11).toInt();
@@ -58,7 +58,7 @@ void loop() {
       if (Firebase.RTDB.setInt(&fbdo, "/sensors/turbidity", turbidity)) {
         Serial.println("Turbidity Data sent");
       } else {
-        Serial.println("Error sending turbidity data: " + fbdo.errorReason());    
+        Serial.println("Error sending turbidity data: " + fbdo.errorReason());
       }
     }
   }
@@ -67,10 +67,6 @@ void loop() {
   if (Firebase.ready()) {
     // Handle authentication requests here if necessary
   }
-  
+
   delay(1000);
 }
-
-
-
-
